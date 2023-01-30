@@ -3,5 +3,3 @@
 / Test string 1
 
 / Test string 2
-
-Test strin local
