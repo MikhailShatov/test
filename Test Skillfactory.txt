@@ -1,6 +1,0 @@
-/Skillfactory test 
-
-/ Test string 1
-
-/ Test string 2
-/ chek local
