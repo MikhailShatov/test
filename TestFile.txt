@@ -1,3 +1,0 @@
-Test string 001
-
-/ chek local
