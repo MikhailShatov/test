@@ -1,6 +1,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-
+// test
 const WT_HOST = __ENV.WT_HOST || "http://webtours.load-test.ru:1080";
 const WT_WEB = `${WT_HOST}/webtours`;
 const WT_CGI = `${WT_HOST}/cgi-bin`;
