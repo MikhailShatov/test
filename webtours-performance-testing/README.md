@@ -64,3 +64,4 @@ k6 run -e WT_HOST=http://webtours.load-test.ru:1080 k6/webtours_k6.js
 
 ## Запуск JMeter
 Запуск JMeter
+jmeter -n -t jmeter/diplom_jm.jmx
