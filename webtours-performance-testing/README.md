@@ -1,3 +1,5 @@
+[![k6 Load Test](https://github.com/MikhailShatov/test/actions/workflows/k6-test.yml/badge.svg)](https://github.com/MikhailShatov/test/actions/workflows/k6-test.yml)
+
 # Нагрузочное тестирование WebTours
 
 ## Цель проекта
