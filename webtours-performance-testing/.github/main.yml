@@ -1,0 +1,23 @@
+name: k6 Load Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-k6-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnupg
+          sudo gpg -k
+          sudo apt-get install -y k6
+
+      - name: Run k6 test
+        run: |
+          k6 run k6/webtours_k6.js
