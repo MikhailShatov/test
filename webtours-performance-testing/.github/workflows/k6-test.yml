@@ -1,0 +1,24 @@
+name: k6 Load Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-k6-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 test
+        uses: grafana/run-k6-action@v1
+        with:
+          path: k6/webtours_k6.js
+        env:
+          WT_HOST: http://webtours.load-test.ru:1080
+          WT_USER: jojo
+          WT_PASS: bean
