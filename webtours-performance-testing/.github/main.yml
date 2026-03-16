@@ -11,13 +11,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install k6
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gnupg
-          sudo gpg -k
-          sudo apt-get install -y k6
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
 
       - name: Run k6 test
-        run: |
-          k6 run k6/webtours_k6.js
+        uses: grafana/run-k6-action@v1
+        with:
+          path: k6/webtours_k6.js
+        env:
+          WT_HOST: http://webtours.load-test.ru:1080
+          WT_USER: jojo
+          WT_PASS: bean
