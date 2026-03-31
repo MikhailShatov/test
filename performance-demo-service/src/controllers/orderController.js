@@ -3,7 +3,9 @@ const orderService = require('../services/orderService');
 async function createOrder(req, res, next) {
   try {
     const result = await orderService.createOrder(req.user.id, {
-      simulatePaymentDelay: req.query.simulatePaymentDelay !== 'false'
+      simulatePaymentDelay: req.query.simulatePaymentDelay !== 'false',
+      paymentScenario: String(req.query.paymentScenario || 'ok').toLowerCase(),
+      paymentDelayMs: Number(req.query.paymentDelayMs || 0)
     });
 
     if (result.type === 'bad_request') {
@@ -12,6 +14,13 @@ async function createOrder(req, res, next) {
 
     if (result.type === 'conflict') {
       return res.status(409).json({ message: result.message });
+    }
+
+    if (result.type === 'bad_gateway') {
+      return res.status(result.statusCode || 502).json({
+        message: result.message,
+        payment: result.payment
+      });
     }
 
     return res.status(201).json(result.order);

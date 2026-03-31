@@ -1,8 +1,15 @@
 const db = require('../db/postgres');
-const sleep = require('../utils/sleep');
+const paymentService = require('./paymentService');
 const { businessOrdersCreated, businessOrderCreationDuration } = require('../metrics/metrics');
 
-async function createOrder(userId, { simulatePaymentDelay = true } = {}) {
+async function createOrder(
+  userId,
+  {
+    simulatePaymentDelay = true,
+    paymentScenario = 'ok',
+    paymentDelayMs = 0
+  } = {}
+) {
   const timer = businessOrderCreationDuration.startTimer();
   const client = await db.getClient();
 
@@ -42,11 +49,28 @@ async function createOrder(userId, { simulatePaymentDelay = true } = {}) {
     const totalAmount = cartItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
 
     if (simulatePaymentDelay) {
-      await sleep(150);
+      const paymentResult = await paymentService.chargePayment({
+        scenario: paymentScenario,
+        delayMs: paymentDelayMs
+      });
+
+      if (!paymentResult.ok) {
+        await client.query('ROLLBACK');
+        return {
+          type: 'bad_gateway',
+          statusCode: paymentResult.status || 502,
+          message: 'Payment provider request failed',
+          payment: paymentResult.data
+        };
+      }
     }
 
     const orderResult = await client.query(
-      'INSERT INTO orders (user_id, status, total_amount) VALUES ($1, $2, $3) RETURNING id, user_id, status, total_amount, created_at',
+      `
+        INSERT INTO orders (user_id, status, total_amount)
+        VALUES ($1, $2, $3)
+        RETURNING id, user_id, status, total_amount, created_at
+      `,
       [userId, 'created', totalAmount]
     );
 
@@ -59,7 +83,7 @@ async function createOrder(userId, { simulatePaymentDelay = true } = {}) {
       );
 
       await client.query(
-        'UPDATE products SET stock = stock - $1 WHERE id = $2',
+        'UPDATE products SET stock = stock - $1, updated_at = NOW() WHERE id = $2',
         [item.quantity, item.product_id]
       );
     }
@@ -68,6 +92,8 @@ async function createOrder(userId, { simulatePaymentDelay = true } = {}) {
       'DELETE FROM cart_items WHERE cart_id = (SELECT id FROM carts WHERE user_id = $1)',
       [userId]
     );
+
+    await client.query('UPDATE carts SET updated_at = NOW() WHERE user_id = $1', [userId]);
 
     await client.query('COMMIT');
     businessOrdersCreated.inc();

@@ -9,8 +9,12 @@ async function start() {
     await db.query('SELECT 1');
     console.log('PostgreSQL connected');
 
-    await connectRedis();
-    console.log('Redis connected');
+    if (env.cacheEnabled) {
+      await connectRedis();
+      console.log('Redis connected');
+    } else {
+      console.log('Redis connection skipped because CACHE_ENABLED=false');
+    }
 
     const server = http.createServer(app);
     server.listen(env.port, () => {

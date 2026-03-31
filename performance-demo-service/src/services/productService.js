@@ -3,17 +3,40 @@ const { client } = require('../db/redis');
 const env = require('../config/env');
 const sleep = require('../utils/sleep');
 
-async function listProducts({ category, limit = 10, offset = 0, sort = 'id', order = 'asc', slow = false }) {
-  const cacheKey = `products:${category || 'all'}:${limit}:${offset}:${sort}:${order}:${slow}`;
-  const cached = await client.get(cacheKey);
+function canUseCache() {
+  return env.cacheEnabled && client.isOpen;
+}
 
+async function readCache(key) {
+  if (!canUseCache()) {
+    return null;
+  }
+
+  const cached = await client.get(key);
+  return cached ? JSON.parse(cached) : null;
+}
+
+async function writeCache(key, value) {
+  if (!canUseCache()) {
+    return;
+  }
+
+  await client.set(key, JSON.stringify(value), { EX: env.cacheTtlSeconds });
+}
+
+async function listProducts({ category, limit = 10, offset = 0, sort = 'id', order = 'asc', slow = false }) {
+  const safeLimit = Number.isFinite(Number(limit)) ? Number(limit) : 10;
+  const safeOffset = Number.isFinite(Number(offset)) ? Number(offset) : 0;
+  const cacheKey = `products:${category || 'all'}:${safeLimit}:${safeOffset}:${sort}:${order}:${slow}`;
+
+  const cached = await readCache(cacheKey);
   if (cached) {
-    return JSON.parse(cached);
+    return cached;
   }
 
   const allowedSort = ['id', 'price', 'created_at', 'name'];
   const safeSort = allowedSort.includes(sort) ? sort : 'id';
-  const safeOrder = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  const safeOrder = String(order).toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
   const values = [];
   let whereClause = '';
@@ -23,11 +46,11 @@ async function listProducts({ category, limit = 10, offset = 0, sort = 'id', ord
     whereClause = `WHERE category = $${values.length}`;
   }
 
-  values.push(limit);
-  values.push(offset);
+  values.push(safeLimit);
+  values.push(safeOffset);
 
   if (slow) {
-    await sleep(120);
+    await sleep(env.performance.productListSlowMs);
   }
 
   const query = `
@@ -42,31 +65,32 @@ async function listProducts({ category, limit = 10, offset = 0, sort = 'id', ord
   const data = {
     items: result.rows,
     pagination: {
-      limit,
-      offset,
+      limit: safeLimit,
+      offset: safeOffset,
       count: result.rowCount
     }
   };
 
-  await client.set(cacheKey, JSON.stringify(data), { EX: env.cacheTtlSeconds });
+  await writeCache(cacheKey, data);
   return data;
 }
 
 async function getProductById(productId, { slow = false }) {
-  const cacheKey = `product:${productId}:${slow}`;
-  const cached = await client.get(cacheKey);
+  const safeProductId = Number(productId);
+  const cacheKey = `product:${safeProductId}:${slow}`;
 
+  const cached = await readCache(cacheKey);
   if (cached) {
-    return JSON.parse(cached);
+    return cached;
   }
 
   if (slow) {
-    await sleep(80);
+    await sleep(env.performance.productDetailsSlowMs);
   }
 
   const result = await db.query(
     'SELECT id, sku, name, category, price, stock, description, created_at FROM products WHERE id = $1',
-    [productId]
+    [safeProductId]
   );
 
   if (result.rowCount === 0) {
@@ -74,7 +98,7 @@ async function getProductById(productId, { slow = false }) {
   }
 
   const product = result.rows[0];
-  await client.set(cacheKey, JSON.stringify(product), { EX: env.cacheTtlSeconds });
+  await writeCache(cacheKey, product);
   return product;
 }
 

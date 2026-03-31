@@ -7,6 +7,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
+const mockRoutes = require('./routes/mockRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/cart', cartRoutes);
 app.use('/orders', orderRoutes);
 app.use('/health', healthRoutes);
 app.use('/metrics', metricsRoutes);
+app.use('/mock', mockRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
