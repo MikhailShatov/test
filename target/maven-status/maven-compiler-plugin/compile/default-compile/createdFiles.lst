@@ -1,0 +1,5 @@
+org\example\kafkamock\KafkaMockApplication.class
+org\example\kafkamock\repository\KafkaMessageRepository.class
+org\example\kafkamock\service\KafkaConsumerService.class
+org\example\kafkamock\model\KafkaMessage.class
+org\example\kafkamock\entity\KafkaMessageEntity.class
