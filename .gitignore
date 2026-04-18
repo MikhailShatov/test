@@ -1,0 +1,34 @@
+# Build
+target/
+out/
+build/
+
+# IDE / editors
+.idea/
+.vscode/
+*.iml
+
+# Metals / Bloop / Scala tooling
+.metals/
+.bloop/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Dumps
+dumps/
+*.hprof
+
+# Local env
+.env
+.env.*
+
+# JMeter temp/results
+results/
+*.jtl
+*.tmp
